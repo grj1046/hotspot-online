@@ -17,40 +17,27 @@ import (
 	"golang.org/x/text/encoding/simplifiedchinese"
 )
 
-const jsonPath = "json"
-
 type JsonModel struct {
 	Name string
 	Url  string
 }
 
-type ZhihuHot struct {
-	FreshText string `json:"fresh_text"`
-	Data      []struct {
-		ID     string `json:"id"`
-		Target struct {
-			ID    int    `json:"id"`
-			Title string `json:"title"`
-			Url   string `json:"url"`
-		} `json:"target"`
-	} `json:"data"`
-}
+//百度今日热点事件排行榜
+const baidu_today = "http://top.baidu.com/buzz?b=341"
 
-type HotSiteModel struct {
-	WebURL           string
-	FileName         string
-	selector         string
-	SiteIsUTF8Encode bool
-	profixURL        string
-}
+//实时热点排行榜
+const baidu_ssrd = "http://top.baidu.com/buzz?b=1"
+const jsonPath = "json"
 
 func decodeToGBK(text string) (string, error) {
+
 	dst := make([]byte, len(text)*2)
 	tr := simplifiedchinese.GB18030.NewDecoder()
 	nDst, _, err := tr.Transform(dst, []byte(text), true)
 	if err != nil {
 		return text, err
 	}
+
 	return string(dst[:nDst]), nil
 }
 
@@ -83,6 +70,7 @@ func getGoquryDocument(weburl string) (*goquery.Document, error) {
 	if response.StatusCode != 200 {
 		return nil, errors.New(fmt.Sprintf("status code error: %d %s", response.StatusCode, response.Status))
 	}
+
 	doc, err := goquery.NewDocumentFromReader(response.Body)
 	if err != nil {
 		return nil, errors.New("goquery new document failed, " + err.Error())
@@ -116,12 +104,44 @@ func WriteFile(model interface{}, fileName string) error {
 }
 
 /************** Get Data **************/
-//百度今日热点事件排行榜
-//百度实时热点排行榜
-//微博热点排行榜
-//贴吧热度榜单
-//V2EX热度榜单
+
+//baidu
+func parse_baidu(weburl string, fileName string) {
+	doc, err := getGoquryDocument(weburl)
+	if err != nil {
+		log.Println("getGoquryDocument failed", err)
+		return
+	}
+	result := make([]JsonModel, 0)
+	doc.Find("a.list-title").Each(func(i int, s *goquery.Selection) {
+		//foreach item found
+		host_name := s.Text()
+		host_url, exists := s.Attr("href")
+		if exists {
+			gbkhost_name, _ := decodeToGBK(host_name)
+			model := JsonModel{gbkhost_name, host_url}
+			result = append(result, model)
+		}
+	})
+	err = WriteFile(result, fileName)
+	if err != nil {
+		log.Println("WriteFile failed ", err)
+		return
+	}
+}
+
 //知乎全站热榜
+type ZhihuHot struct {
+	FreshText string `json:"fresh_text"`
+	Data      []struct {
+		ID     string `json:"id"`
+		Target struct {
+			ID    int    `json:"id"`
+			Title string `json:"title"`
+			Url   string `json:"url"`
+		} `json:"target"`
+	} `json:"data"`
+}
 
 func parse_zhihu_rb() {
 	weburl := "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=50&desktop=true"
@@ -150,6 +170,98 @@ func parse_zhihu_rb() {
 	}
 }
 
+//微博热点排行榜
+func parse_weibo_rb() {
+	weburl := "https://s.weibo.com/top/summary?cate=realtimehot"
+	weibo := "https://s.weibo.com"
+	fileName := "weibo.json"
+	doc, err := getGoquryDocument(weburl)
+	if err != nil {
+		log.Println("getGoquryDocument failed", err)
+		return
+	}
+	result := make([]JsonModel, 0)
+	doc.Find("td.td-02 a").Each(func(i int, s *goquery.Selection) {
+		hot_title := s.Text()
+		hot_url, exists := s.Attr("href")
+		if exists {
+			//过滤微博的广告，做个判断
+			if strings.Index(hot_url, "javascript:void(0)") != -1 {
+				return
+			}
+			//gbkhot_title, _ := decodeToGBK(hot_title)
+			model := JsonModel{hot_title, weibo + hot_url}
+			result = append(result, model)
+		}
+	})
+	err = WriteFile(result, fileName)
+	if err != nil {
+		log.Println("WriteFile failed ", err)
+		return
+	}
+}
+
+//贴吧热度榜单
+func parse_tieba_rb() {
+	weburl := "http://tieba.baidu.com/hottopic/browse/topicList?res_type=1&red_tag=t0737908504"
+	fileName := "tieba.json"
+	doc, err := getGoquryDocument(weburl)
+	if err != nil {
+		log.Println("getGoquryDocument failed", err)
+		return
+	}
+	result := make([]JsonModel, 0)
+	doc.Find("a.topic-text").Each(func(i int, s *goquery.Selection) {
+		hot_title := s.Text()
+		hot_url, exists := s.Attr("href")
+		if exists {
+			//gbkhot_title, _ := decodeToGBK(hot_title)
+			model := JsonModel{hot_title, hot_url}
+			result = append(result, model)
+		}
+	})
+	err = WriteFile(result, fileName)
+	if err != nil {
+		log.Println("WriteFile failed ", err)
+		return
+	}
+}
+
+//V2EX热度榜单
+func parse_v2ex_rb() {
+	weburl := "https://www.v2ex.com/?tab=hot"
+	vsite := "https://www.v2ex.com"
+	fileName := "vsite.json"
+	doc, err := getGoquryDocument(weburl)
+	if err != nil {
+		log.Println("getGoquryDocument failed", err)
+		return
+	}
+	result := make([]JsonModel, 0)
+	doc.Find("span.item_title a").Each(func(i int, s *goquery.Selection) {
+		hot_title := s.Text()
+		hot_url, exists := s.Attr("href")
+		if exists {
+			//gbkhot_title, _ := decodeToGBK(hot_title)
+			model := JsonModel{hot_title, vsite + hot_url}
+			result = append(result, model)
+		}
+	})
+	err = WriteFile(result, fileName)
+	if err != nil {
+		log.Println("WriteFile failed ", err)
+		return
+	}
+}
+
+type HotSiteModel struct {
+	WebURL           string
+	FileName         string
+	selector         string
+	SiteIsUTF8Encode bool
+	profixURL        string
+}
+
 func parse_website(model HotSiteModel) {
 	doc, err := getGoquryDocument(model.WebURL)
 	if err != nil {
@@ -165,7 +277,7 @@ func parse_website(model HotSiteModel) {
 			if model.SiteIsUTF8Encode {
 				title, _ = decodeToGBK(title)
 			}
-			//过滤微博的广告
+			//过滤微博的广告，做个判断
 			if strings.Index(host_url, "javascript:void(0)") != -1 {
 				return
 			}
@@ -182,24 +294,25 @@ func parse_website(model HotSiteModel) {
 
 func GetHotspot() {
 	sites := []HotSiteModel{
-		{WebURL: "http://top.baidu.com/buzz?b=341", FileName: "baidusj.json", selector: "a.list-title",
-			SiteIsUTF8Encode: true, profixURL: ""},
-		{WebURL: "http://top.baidu.com/buzz?b=1", FileName: "baidurd.json", selector: "a.list-title",
-			SiteIsUTF8Encode: true, profixURL: ""},
-		{WebURL: "https://s.weibo.com/top/summary?cate=realtimehot", FileName: "weibo.json", selector: "td.td-02 a",
-			SiteIsUTF8Encode: false, profixURL: "https://s.weibo.com"},
-		{WebURL: "http://tieba.baidu.com/hottopic/browse/topicList?res_type=1", FileName: "tieba.json", selector: "a.topic-text",
-			SiteIsUTF8Encode: false, profixURL: ""},
-		{WebURL: "https://www.v2ex.com/?tab=hot", FileName: "vsite.json", selector: "span.item_title a",
-			SiteIsUTF8Encode: false, profixURL: "https://www.v2ex.com"},
+		HotSiteModel{WebURL: "http://top.baidu.com/buzz?b=341",
+			FileName: "baidusj.json", selector: "a.list-title", SiteIsUTF8Encode: true, profixURL: ""},
+		HotSiteModel{WebURL: "http://top.baidu.com/buzz?b=1",
+			FileName: "baidurd.json", selector: "a.list-title", SiteIsUTF8Encode: true, profixURL: ""},
+		HotSiteModel{WebURL: "https://s.weibo.com/top/summary?cate=realtimehot",
+			FileName: "weibo.json", selector: "td.td-02 a", SiteIsUTF8Encode: false, profixURL: "https://s.weibo.com"},
+		HotSiteModel{WebURL: "http://tieba.baidu.com/hottopic/browse/topicList?res_type=1",
+			FileName: "tieba.json", selector: "a.topic-text", SiteIsUTF8Encode: false, profixURL: ""},
+		HotSiteModel{WebURL: "https://www.v2ex.com/?tab=hot",
+			FileName: "vsite.json", selector: "span.item_title a", SiteIsUTF8Encode: false, profixURL: "https://www.v2ex.com"},
 	}
 	for {
+		parse_baidu(baidu_ssrd, "baidurd.json")
+		parse_baidu(baidu_today, "baidusj.json")
 		parse_zhihu_rb()
-		for _, model := range sites {
-			parse_website(model)
-		}
-		//rum every 10 Minute
-		time.Sleep(time.Duration(10) * time.Minute)
+		parse_weibo_rb()
+		parse_tieba_rb()
+		parse_v2ex_rb()
+		time.Sleep(600)
 	}
 }
 
