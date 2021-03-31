@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -18,11 +20,6 @@ import (
 type JsonModel struct {
 	Name string
 	Url  string
-}
-
-type Page struct {
-	Title string
-	Body  []byte
 }
 
 //百度今日热点事件排行榜
@@ -44,6 +41,24 @@ func decodeToGBK(text string) (string, error) {
 	return string(dst[:nDst]), nil
 }
 
+func getHttpBody(weburl string) ([]byte, error) {
+	client := &http.Client{}
+	request, _ := http.NewRequest(http.MethodGet, weburl, nil)
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, errors.New("NewRequest: " + err.Error())
+	}
+	defer response.Body.Close()
+	if response.StatusCode != 200 {
+		return nil, errors.New(fmt.Sprintf("status code error: %d %s", response.StatusCode, response.Status))
+	}
+	byteBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return nil, errors.New("read body failed, " + err.Error())
+	}
+	return byteBody, nil
+}
+
 func getGoquryDocument(weburl string) (*goquery.Document, error) {
 	client := &http.Client{}
 	request, _ := http.NewRequest(http.MethodGet, weburl, nil)
@@ -58,7 +73,6 @@ func getGoquryDocument(weburl string) (*goquery.Document, error) {
 
 	doc, err := goquery.NewDocumentFromReader(response.Body)
 	if err != nil {
-		fmt.Println("goquery new document failed", err)
 		return nil, errors.New("goquery new document failed, " + err.Error())
 	}
 	return doc, nil
@@ -70,7 +84,6 @@ func EscapeStructHTML(model interface{}) (string, error) {
 	jsonEncoder.SetEscapeHTML(false)
 	err := jsonEncoder.Encode(model)
 	if err != nil {
-		fmt.Println("Encode result failed", err)
 		return "", errors.New("Encode result failed" + err.Error())
 	}
 	return bf.String(), nil
@@ -83,7 +96,6 @@ func WriteFile(model interface{}, fileName string) error {
 	}
 	fp, err := os.OpenFile(path.Join(jsonPath, fileName), os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
-		fmt.Println("open file failed", fileName, err)
 		return errors.New("open file failed " + fileName + " " + err.Error())
 	}
 	defer fp.Close()
@@ -96,7 +108,7 @@ func WriteFile(model interface{}, fileName string) error {
 func parse_baidu(weburl string, fileName string) {
 	doc, err := getGoquryDocument(weburl)
 	if err != nil {
-		fmt.Println("getGoquryDocument failed", err)
+		log.Println("getGoquryDocument failed", err)
 		return
 	}
 	result := make([]JsonModel, 0)
@@ -112,7 +124,7 @@ func parse_baidu(weburl string, fileName string) {
 	})
 	err = WriteFile(result, fileName)
 	if err != nil {
-		fmt.Println("WriteFile failed ", err)
+		log.Println("WriteFile failed ", err)
 		return
 	}
 }
@@ -133,27 +145,15 @@ type ZhihuHot struct {
 func parse_zhihu_rb() {
 	weburl := "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=50&desktop=true"
 	fileName := "zhihu.json"
-	client := &http.Client{}
-	request, _ := http.NewRequest(http.MethodGet, weburl, nil)
-	response, err := client.Do(request)
+	byteBody, err := getHttpBody(weburl)
 	if err != nil {
-		fmt.Println("request error. ", err)
-		return
-	}
-	defer response.Body.Close()
-	if response.StatusCode != 200 {
-		fmt.Println("Get Response error. ", response.Status)
+		log.Println("getHttpBody failed", err)
 		return
 	}
 	result := make([]JsonModel, 0)
-	byteBody, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		fmt.Println("read body failed", err)
-		return
-	}
 	var zhihuhot ZhihuHot
 	if err := json.Unmarshal(byteBody, &zhihuhot); err != nil {
-		fmt.Println("Unmarshal failed", err)
+		log.Println("Unmarshal failed", err)
 		return
 	}
 	for _, item := range zhihuhot.Data {
@@ -164,12 +164,42 @@ func parse_zhihu_rb() {
 	}
 	err = WriteFile(result, fileName)
 	if err != nil {
-		fmt.Println("WriteFile failed ", err)
+		log.Println("WriteFile failed ", err)
 		return
 	}
 }
 
 //微博热点排行榜
+func parse_weibo_rb() {
+	weburl := "https://s.weibo.com/top/summary?cate=realtimehot"
+	weibo := "https://s.weibo.com"
+	fileName := "weibo.json"
+	doc, err := getGoquryDocument(weburl)
+	if err != nil {
+		log.Println("getGoquryDocument failed", err)
+		return
+	}
+	result := make([]JsonModel, 0)
+	doc.Find("td.td-02 a").Each(func(i int, s *goquery.Selection) {
+		//foreach item found
+		hot_title := s.Text()
+		hot_url, exists := s.Attr("href")
+		if exists {
+			//过滤微博的广告，做个判断
+			if strings.Index(hot_url, "javascript:void(0)") != -1 {
+				return
+			}
+			//gbkhot_title, _ := decodeToGBK(hot_title)
+			model := JsonModel{hot_title, weibo + hot_url}
+			result = append(result, model)
+		}
+	})
+	err = WriteFile(result, fileName)
+	if err != nil {
+		log.Println("WriteFile failed ", err)
+		return
+	}
+}
 
 //贴吧热度榜单
 
@@ -180,6 +210,7 @@ func GetHotspot() {
 		parse_baidu(baidu_ssrd, "baidurd.json")
 		parse_baidu(baidu_today, "baidusj.json")
 		parse_zhihu_rb()
+		parse_weibo_rb()
 		time.Sleep(600)
 	}
 }
