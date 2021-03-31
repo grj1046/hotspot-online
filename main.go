@@ -181,7 +181,6 @@ func parse_weibo_rb() {
 	}
 	result := make([]JsonModel, 0)
 	doc.Find("td.td-02 a").Each(func(i int, s *goquery.Selection) {
-		//foreach item found
 		hot_title := s.Text()
 		hot_url, exists := s.Attr("href")
 		if exists {
@@ -202,8 +201,57 @@ func parse_weibo_rb() {
 }
 
 //贴吧热度榜单
+func parse_tieba_rb() {
+	weburl := "http://tieba.baidu.com/hottopic/browse/topicList?res_type=1&red_tag=t0737908504"
+	fileName := "tieba.json"
+	doc, err := getGoquryDocument(weburl)
+	if err != nil {
+		log.Println("getGoquryDocument failed", err)
+		return
+	}
+	result := make([]JsonModel, 0)
+	doc.Find("a.topic-text").Each(func(i int, s *goquery.Selection) {
+		hot_title := s.Text()
+		hot_url, exists := s.Attr("href")
+		if exists {
+			//gbkhot_title, _ := decodeToGBK(hot_title)
+			model := JsonModel{hot_title, hot_url}
+			result = append(result, model)
+		}
+	})
+	err = WriteFile(result, fileName)
+	if err != nil {
+		log.Println("WriteFile failed ", err)
+		return
+	}
+}
 
 //V2EX热度榜单
+func parse_v2ex_rb() {
+	weburl := "https://www.v2ex.com/?tab=hot"
+	vsite := "https://www.v2ex.com"
+	fileName := "vsite.json"
+	doc, err := getGoquryDocument(weburl)
+	if err != nil {
+		log.Println("getGoquryDocument failed", err)
+		return
+	}
+	result := make([]JsonModel, 0)
+	doc.Find("span.item_title a").Each(func(i int, s *goquery.Selection) {
+		hot_title := s.Text()
+		hot_url, exists := s.Attr("href")
+		if exists {
+			//gbkhot_title, _ := decodeToGBK(hot_title)
+			model := JsonModel{hot_title, vsite + hot_url}
+			result = append(result, model)
+		}
+	})
+	err = WriteFile(result, fileName)
+	if err != nil {
+		log.Println("WriteFile failed ", err)
+		return
+	}
+}
 
 func GetHotspot() {
 	for {
@@ -211,6 +259,8 @@ func GetHotspot() {
 		parse_baidu(baidu_today, "baidusj.json")
 		parse_zhihu_rb()
 		parse_weibo_rb()
+		parse_tieba_rb()
+		parse_v2ex_rb()
 		time.Sleep(600)
 	}
 }
