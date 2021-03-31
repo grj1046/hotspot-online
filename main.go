@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -41,34 +44,59 @@ func decodeToGBK(text string) (string, error) {
 	return string(dst[:nDst]), nil
 }
 
-/************** Get Data **************/
-//baidu
-func parse_baidu(baidu_url string, fileName string) {
-	fp, err := os.OpenFile(path.Join(jsonPath, fileName), os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0600)
-	if err != nil {
-		fmt.Println("open file failed", fileName, err)
-		return
-	}
-	defer fp.Close()
-
+func getGoquryDocument(weburl string) (*goquery.Document, error) {
 	client := &http.Client{}
-	request, _ := http.NewRequest(http.MethodGet, baidu_url, nil)
-	// request.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9")
-	// request.Header.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8,ja;q=0.7,zh-TW;q=0.6")
+	request, _ := http.NewRequest(http.MethodGet, weburl, nil)
 	response, err := client.Do(request)
 	if err != nil {
-		fmt.Println("NewRequest", err)
-		return
+		return nil, errors.New("NewRequest: " + err.Error())
 	}
 	defer response.Body.Close()
 	if response.StatusCode != 200 {
-		fmt.Printf("status code error: %d %s", response.StatusCode, response.Status)
-		return
+		return nil, errors.New(fmt.Sprintf("status code error: %d %s", response.StatusCode, response.Status))
 	}
 
 	doc, err := goquery.NewDocumentFromReader(response.Body)
 	if err != nil {
 		fmt.Println("goquery new document failed", err)
+		return nil, errors.New("goquery new document failed, " + err.Error())
+	}
+	return doc, nil
+}
+
+func EscapeStructHTML(model interface{}) (string, error) {
+	bf := bytes.NewBuffer([]byte{})
+	jsonEncoder := json.NewEncoder(bf)
+	jsonEncoder.SetEscapeHTML(false)
+	err := jsonEncoder.Encode(model)
+	if err != nil {
+		fmt.Println("Encode result failed", err)
+		return "", errors.New("Encode result failed" + err.Error())
+	}
+	return bf.String(), nil
+}
+
+func WriteFile(model interface{}, fileName string) error {
+	content, err := EscapeStructHTML(model)
+	if err != nil {
+		return errors.New("EscapeStructHTML failed" + err.Error())
+	}
+	fp, err := os.OpenFile(path.Join(jsonPath, fileName), os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		fmt.Println("open file failed", fileName, err)
+		return errors.New("open file failed " + fileName + " " + err.Error())
+	}
+	defer fp.Close()
+	fp.WriteString(content)
+	return nil
+}
+
+/************** Get Data **************/
+//baidu
+func parse_baidu(weburl string, fileName string) {
+	doc, err := getGoquryDocument(weburl)
+	if err != nil {
+		fmt.Println("getGoquryDocument failed", err)
 		return
 	}
 	result := make([]JsonModel, 0)
@@ -82,18 +110,76 @@ func parse_baidu(baidu_url string, fileName string) {
 			result = append(result, model)
 		}
 	})
-	content, err := json.Marshal(result)
+	err = WriteFile(result, fileName)
 	if err != nil {
-		fmt.Println("Marshal failed", err)
+		fmt.Println("WriteFile failed ", err)
 		return
 	}
-	fp.WriteString(string(content))
 }
+
+//知乎全站热榜
+type ZhihuHot struct {
+	FreshText string `json:"fresh_text"`
+	Data      []struct {
+		ID     string `json:"id"`
+		Target struct {
+			ID    int    `json:"id"`
+			Title string `json:"title"`
+			Url   string `json:"url"`
+		} `json:"target"`
+	} `json:"data"`
+}
+
+func parse_zhihu_rb() {
+	weburl := "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=50&desktop=true"
+	fileName := "zhihu.json"
+	client := &http.Client{}
+	request, _ := http.NewRequest(http.MethodGet, weburl, nil)
+	response, err := client.Do(request)
+	if err != nil {
+		fmt.Println("request error. ", err)
+		return
+	}
+	defer response.Body.Close()
+	if response.StatusCode != 200 {
+		fmt.Println("Get Response error. ", response.Status)
+		return
+	}
+	result := make([]JsonModel, 0)
+	byteBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		fmt.Println("read body failed", err)
+		return
+	}
+	var zhihuhot ZhihuHot
+	if err := json.Unmarshal(byteBody, &zhihuhot); err != nil {
+		fmt.Println("Unmarshal failed", err)
+		return
+	}
+	for _, item := range zhihuhot.Data {
+		title := item.Target.Title
+		url := item.Target.Url
+		model := JsonModel{title, url}
+		result = append(result, model)
+	}
+	err = WriteFile(result, fileName)
+	if err != nil {
+		fmt.Println("WriteFile failed ", err)
+		return
+	}
+}
+
+//微博热点排行榜
+
+//贴吧热度榜单
+
+//V2EX热度榜单
 
 func GetHotspot() {
 	for {
 		parse_baidu(baidu_ssrd, "baidurd.json")
 		parse_baidu(baidu_today, "baidusj.json")
+		parse_zhihu_rb()
 		time.Sleep(600)
 	}
 }
