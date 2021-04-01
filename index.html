@@ -108,7 +108,7 @@
                     var currSite = currFileName.replace(".json", "");
                     for (var j = 0; j < data_all[i].Content.length; j++) {
                         var id_name = currSite + j;
-                        var x = i + 1
+                        var x = j + 1
                         var $ele = $("#" + id_name);
                         if ($ele) {
                             var text = '<small class="font-weight-normal">' + x + '.' + data_all[i].Content[j].Name + '</small>';
