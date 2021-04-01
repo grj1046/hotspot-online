@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"embed"
 	"encoding/json"
 	"errors"
@@ -63,7 +64,10 @@ func decodeToGBK(text string) (string, error) {
 }
 
 func getHttpBody(weburl string) ([]byte, error) {
-	client := &http.Client{}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
 	request, _ := http.NewRequest(http.MethodGet, weburl, nil)
 	response, err := client.Do(request)
 	if err != nil {
@@ -81,7 +85,10 @@ func getHttpBody(weburl string) ([]byte, error) {
 }
 
 func getGoquryDocument(weburl string) (*goquery.Document, error) {
-	client := &http.Client{}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
 	request, _ := http.NewRequest(http.MethodGet, weburl, nil)
 	response, err := client.Do(request)
 	if err != nil {
