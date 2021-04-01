@@ -8,7 +8,7 @@
 </head>
 <body>
     <div class="container">
-        <h2 class="font-weight-light">LookCos榜单聚合<small class="font-weight-light">-实时更新</small></h2>
+        <h2 class="font-weight-light">LookCos榜单聚合 <small class="font-weight-light">- 实时更新</small></h2>
         <br />
         <div class="row">
             <div class="col-sm-3">
@@ -99,23 +99,26 @@
     <script src="https://cdn.staticfile.org/popper.js/1.12.5/umd/popper.min.js"></script>
     <script src="https://cdn.staticfile.org/twitter-bootstrap/4.1.0/js/bootstrap.min.js"></script>
     <script type="text/javascript">
-        function html_xr(data_item) {
-            var page = "/hotspot?jsoncallback=?&item=" + data_item;
+        //var siteArray = ["baidusj", "baidurd", "weibo", "tieba", "vsite", "zhihu"];
+        $(function () {
+            var page = "hotspot";
             $.getJSON(page, function (data_all) {
-                for (var i = 0; i <= data_all.length; i++) {
-                    var id_name = data_item + i;
-                    var x = i + 1
-                    document.getElementById(id_name).innerHTML = '<small class="font-weight-normal">' + x + '.' + data_all[i]['name'] + '</small>';
-                    document.getElementById(id_name).setAttribute("href", data_all[i]['url']);
+                for (var i = 0; i < data_all.length; i++) {
+                    var currFileName = data_all[i].FileName;
+                    var currSite = currFileName.replace(".json", "");
+                    for (var j = 0; j < data_all[i].Content.length; j++) {
+                        var id_name = currSite + j;
+                        var x = i + 1
+                        var $ele = $("#" + id_name);
+                        if ($ele) {
+                            var text = '<small class="font-weight-normal">' + x + '.' + data_all[i].Content[j].Name + '</small>';
+                            $ele.html(text);
+                            $ele.attr("href", data_all[i].Content[j].Url)
+                        }
+                    }
                 }
             });
-        };
-        html_xr("baidusj");
-        html_xr("baidurd");
-        html_xr("weibo");
-        html_xr("tieba");
-        html_xr("vsite");
-        html_xr("zhihu");
+        })
     </script>>
 </body>
 </html>

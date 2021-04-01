@@ -234,7 +234,12 @@ func GetHotspot() {
 
 /************** Http **************/
 func handlerHome(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hi there, I love %s!", r.URL.Path[1:])
+	byteHtml, err := ioutil.ReadFile("index.html")
+	if err != nil {
+		fmt.Fprintf(w, "get index.html failed. "+err.Error())
+		return
+	}
+	w.Write(byteHtml)
 }
 
 func handlerHotspot(w http.ResponseWriter, r *http.Request) {
@@ -253,10 +258,10 @@ func handlerHotspot(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	jsonEncoder := json.NewEncoder(w)
 	jsonEncoder.SetEscapeHTML(false)
-	err := jsonEncoder.Encode(result)
-	if err != nil {
-		log.Fatal("Encode result failed" + err.Error())
-	}
+	_ = jsonEncoder.Encode(result)
+	// if err != nil {
+	// 	log.Fatal("Encode result failed " + err.Error())
+	// }
 }
 
 /************** main func **************/
