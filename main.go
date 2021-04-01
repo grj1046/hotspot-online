@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -221,6 +222,11 @@ func GetHotSiteModel() []HotSiteModel {
 }
 
 func GetHotspot() {
+	timer_duration := os.Getenv("HOTSPOT_TIMER_DURATION")
+	duration, err := strconv.Atoi(timer_duration)
+	if err != nil {
+		duration = 10
+	}
 	sites := GetHotSiteModel()
 	for {
 		parse_zhihu_rb()
@@ -228,7 +234,7 @@ func GetHotspot() {
 			parse_website(model)
 		}
 		//rum every 10 Minute
-		time.Sleep(time.Duration(1) * time.Minute)
+		time.Sleep(time.Duration(duration) * time.Minute)
 	}
 }
 
@@ -271,10 +277,21 @@ func main() {
 	if err != nil {
 		os.Mkdir(jsonPath, os.ModePerm)
 	}
+
+	httpPort := os.Getenv("HOTSPOT_HTTP_PORT")
+	port, err := strconv.Atoi(httpPort)
+	if err != nil {
+		port = 80
+	}
+
+	httpPort = ":" + strconv.Itoa(port)
 	//get data from website
-	go GetHotspot()
+	//go GetHotspot()
 	//start http server
 	http.HandleFunc("/hotspot", handlerHotspot)
 	http.HandleFunc("/", handlerHome)
-	http.ListenAndServe(":83", nil)
+	err = http.ListenAndServe(httpPort, nil)
+	if err != nil {
+		log.Fatal("ListenAndServe failed", err)
+	}
 }
