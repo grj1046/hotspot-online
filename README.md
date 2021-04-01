@@ -18,7 +18,8 @@
 #### 02.处理并返回数据 (可通过环境变量`HOTSPOT_HTTP_PORT`设置端口，默认值`80`)
 接口  `/hotspot` 会将本地json文件读取并按照需求返回为json格式接口
 返回格式如下:
-```json
+
+```
 [{
     FileName: '',
     Content: [{
@@ -30,3 +31,16 @@
 
 #### 03.前端展示
 前端采用Bootstrap4 来展示，用`jquery.getJSON`从远程接口获取数据，来渲染页面。
+
+### 04.添加对Docker的支持
+使用 golang alpine 生成的镜像文件也不小，我记得有一个在同一个Dockerfile中指定编译镜像和部署镜像的写法，找不到那种写法了。
+可以使用scratch镜像指定一个空的文件夹
+
+项目中的Dockerfile生成的镜像有点大 366MB
+
+如果用Scratch作镜像，大小只有7MB，需要研究一下
+
+
+### 其它有用无用的东西
+https://golang.org/pkg/embed/
+https://harsimranmaan.medium.com/embedding-static-files-in-a-go-binary-using-go-embed-bac505f3cb9a

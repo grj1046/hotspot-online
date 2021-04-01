@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,6 +18,9 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/text/encoding/simplifiedchinese"
 )
+
+//go:embed index.html
+var embedFile embed.FS
 
 const jsonPath = "json"
 
@@ -147,13 +151,13 @@ func parse_zhihu_rb() {
 	fileName := "zhihu.json"
 	byteBody, err := getHttpBody(weburl)
 	if err != nil {
-		log.Println("getHttpBody failed", err)
+		log.Println("getHttpBody failed: ", err)
 		return
 	}
 	result := make([]JsonModel, 0)
 	var zhihuhot ZhihuHot
 	if err := json.Unmarshal(byteBody, &zhihuhot); err != nil {
-		log.Println("Unmarshal failed", err)
+		log.Println("Unmarshal failed: ", err)
 		return
 	}
 	for _, item := range zhihuhot.Data {
@@ -170,7 +174,7 @@ func parse_zhihu_rb() {
 	}
 	err = WriteFile(result, fileName)
 	if err != nil {
-		log.Println("WriteFile failed ", err)
+		log.Println("WriteFile failed: ", err)
 		return
 	}
 }
@@ -178,7 +182,7 @@ func parse_zhihu_rb() {
 func parse_website(model HotSiteModel) {
 	doc, err := getGoquryDocument(model.WebURL)
 	if err != nil {
-		log.Println("getGoquryDocument failed", err)
+		log.Println("getGoquryDocument failed: ", err)
 		return
 	}
 	result := make([]JsonModel, 0)
@@ -200,7 +204,7 @@ func parse_website(model HotSiteModel) {
 	})
 	err = WriteFile(result, model.FileName)
 	if err != nil {
-		log.Println("WriteFile failed ", err)
+		log.Println("WriteFile failed: ", err)
 		return
 	}
 }
@@ -240,7 +244,7 @@ func GetHotspot() {
 
 /************** Http **************/
 func handlerHome(w http.ResponseWriter, r *http.Request) {
-	byteHtml, err := ioutil.ReadFile("index.html")
+	byteHtml, err := embedFile.ReadFile("index.html")
 	if err != nil {
 		fmt.Fprintf(w, "get index.html failed. "+err.Error())
 		return
@@ -292,6 +296,8 @@ func main() {
 	http.HandleFunc("/", handlerHome)
 	err = http.ListenAndServe(httpPort, nil)
 	if err != nil {
-		log.Fatal("ListenAndServe failed", err)
+		log.Fatal("ListenAndServe failed: ", err)
+		return
 	}
+	fmt.Println("ListenAndServe: ", httpPort)
 }
