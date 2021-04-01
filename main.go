@@ -10,7 +10,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -21,8 +20,6 @@ import (
 
 //go:embed index.html
 var embedFile embed.FS
-
-const jsonPath = "json"
 
 type JsonModel struct {
 	Name string
@@ -52,6 +49,8 @@ type HotSiteModel struct {
 	SiteIsUTF8Encode bool
 	profixURL        string
 }
+
+var globalData = make([]HotspotModel, 0)
 
 func decodeToGBK(text string) (string, error) {
 	dst := make([]byte, len(text)*2)
@@ -99,51 +98,33 @@ func getGoquryDocument(weburl string) (*goquery.Document, error) {
 	return doc, nil
 }
 
-func EscapeStructHTML(model interface{}) (string, error) {
+func EscapeStructHTML(model interface{}) ([]byte, error) {
 	bf := bytes.NewBuffer([]byte{})
 	jsonEncoder := json.NewEncoder(bf)
 	jsonEncoder.SetEscapeHTML(false)
 	err := jsonEncoder.Encode(model)
 	if err != nil {
-		return "", errors.New("Encode result failed" + err.Error())
+		return nil, errors.New("Encode result failed" + err.Error())
 	}
-	return bf.String(), nil
+	return bf.Bytes(), nil
 }
 
-func WriteFile(model interface{}, fileName string) error {
-	content, err := EscapeStructHTML(model)
-	if err != nil {
-		return errors.New("EscapeStructHTML failed" + err.Error())
+func writeData(fileName string, content []JsonModel) {
+	exists := false
+	for _, v := range globalData {
+		if v.FileName == fileName {
+			v.Content = content
+			exists = true
+			break
+		}
 	}
-	fp, err := os.OpenFile(path.Join(jsonPath, fileName), os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0600)
-	if err != nil {
-		return errors.New("open file failed " + fileName + " " + err.Error())
+	if !exists {
+		var curr = HotspotModel{FileName: fileName, Content: content}
+		globalData = append(globalData, curr)
 	}
-	defer fp.Close()
-	fp.WriteString(content)
-	return nil
-}
-
-func readJsonFile(fileName string) ([]JsonModel, error) {
-	content, err := ioutil.ReadFile(path.Join(jsonPath, fileName))
-	if err != nil {
-		return nil, errors.New("read file failed" + err.Error())
-	}
-
-	result := make([]JsonModel, 0)
-	if err := json.Unmarshal(content, &result); err != nil {
-		return nil, errors.New("Unmarshal failed" + err.Error())
-	}
-	return result, nil
 }
 
 /************** Get Data **************/
-//百度今日热点事件排行榜
-//百度实时热点排行榜
-//微博热点排行榜
-//贴吧热度榜单
-//V2EX热度榜单
-//知乎全站热榜
 
 func parse_zhihu_rb() {
 	//https://www.zhihu.com/hot this url need cookies
@@ -172,11 +153,7 @@ func parse_zhihu_rb() {
 		model := JsonModel{title, url}
 		result = append(result, model)
 	}
-	err = WriteFile(result, fileName)
-	if err != nil {
-		log.Println("WriteFile failed: ", err)
-		return
-	}
+	writeData(fileName, result)
 }
 
 func parse_website(model HotSiteModel) {
@@ -202,11 +179,7 @@ func parse_website(model HotSiteModel) {
 			result = append(result, model)
 		}
 	})
-	err = WriteFile(result, model.FileName)
-	if err != nil {
-		log.Println("WriteFile failed: ", err)
-		return
-	}
+	writeData(model.FileName, result)
 }
 
 func GetHotSiteModel() []HotSiteModel {
@@ -253,44 +226,29 @@ func handlerHome(w http.ResponseWriter, r *http.Request) {
 }
 
 func handlerHotspot(w http.ResponseWriter, r *http.Request) {
-	result := make([]HotspotModel, 0)
-	//zhihu
-	jsonContent, _ := readJsonFile("zhihu.json")
-	tmp := HotspotModel{FileName: "zhihu.json", Content: jsonContent}
-	result = append(result, tmp)
-	//other
-	sites := GetHotSiteModel()
-	for _, model := range sites {
-		jsonContent, _ := readJsonFile(model.FileName)
-		tmp := HotspotModel{FileName: model.FileName, Content: jsonContent}
-		result = append(result, tmp)
-	}
 	w.Header().Set("Content-Type", "application/json")
+	data, err := EscapeStructHTML(globalData)
+	if err != nil {
+	}
+	escapedData := []HotspotModel{}
+	err = json.Unmarshal(data, &escapedData)
+	if err != nil {
+	}
 	jsonEncoder := json.NewEncoder(w)
 	jsonEncoder.SetEscapeHTML(false)
-	_ = jsonEncoder.Encode(result)
-	// if err != nil {
-	// 	log.Fatal("Encode result failed " + err.Error())
-	// }
+	_ = jsonEncoder.Encode(escapedData)
 }
 
 /************** main func **************/
 func main() {
-	//Create json Folder
-	_, err := os.Stat(jsonPath)
-	if err != nil {
-		os.Mkdir(jsonPath, os.ModePerm)
-	}
-
 	httpPort := os.Getenv("HOTSPOT_HTTP_PORT")
 	port, err := strconv.Atoi(httpPort)
 	if err != nil {
 		port = 80
 	}
-
 	httpPort = ":" + strconv.Itoa(port)
 	//get data from website
-	//go GetHotspot()
+	go GetHotspot()
 	//start http server
 	http.HandleFunc("/hotspot", handlerHotspot)
 	http.HandleFunc("/", handlerHome)
