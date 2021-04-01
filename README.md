@@ -49,3 +49,20 @@ Docker-compose.yml的模式没去研究
 https://golang.org/pkg/embed/
 https://harsimranmaan.medium.com/embedding-static-files-in-a-go-binary-using-go-embed-bac505f3cb9a
 https://blog.cloud66.com/how-to-create-the-smallest-possible-docker-image-for-your-golang-application/
+
+```
+RUN apk --no-cache add ca-certificates \
+  && update-ca-certificates
+```
+
+```
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	request, _ := http.NewRequest(http.MethodGet, weburl, nil)
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, errors.New("NewRequest: " + err.Error())
+	}
+```
