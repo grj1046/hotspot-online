@@ -23,6 +23,10 @@ type JsonModel struct {
 	Name string
 	Url  string
 }
+type HotspotModel struct {
+	FileName string
+	Content  []JsonModel
+}
 
 type ZhihuHot struct {
 	FreshText string `json:"fresh_text"`
@@ -124,6 +128,7 @@ func WriteFile(model interface{}, fileName string) error {
 //知乎全站热榜
 
 func parse_zhihu_rb() {
+	//https://www.zhihu.com/hot this url need cookies
 	weburl := "https://www.zhihu.com/api/v3/feed/topstory/hot-lists/total?limit=50&desktop=true"
 	fileName := "zhihu.json"
 	byteBody, err := getHttpBody(weburl)
@@ -140,6 +145,12 @@ func parse_zhihu_rb() {
 	for _, item := range zhihuhot.Data {
 		title := item.Target.Title
 		url := item.Target.Url
+		// https://www.zhihu.com/questions/451966718
+		// https://www.zhihu.com/question/451966718
+		//https://api.zhihu.com/questions/451966718
+		if strings.Contains(url, "api.zhihu.com/questions") {
+			url = strings.Replace(url, "api.zhihu.com/questions", "www.zhihu.com/question", -1)
+		}
 		model := JsonModel{title, url}
 		result = append(result, model)
 	}
@@ -180,7 +191,7 @@ func parse_website(model HotSiteModel) {
 	}
 }
 
-func GetHotspot() {
+func GetHotSiteModel() []HotSiteModel {
 	sites := []HotSiteModel{
 		{WebURL: "http://top.baidu.com/buzz?b=341", FileName: "baidusj.json", selector: "a.list-title",
 			SiteIsUTF8Encode: true, profixURL: ""},
@@ -193,13 +204,18 @@ func GetHotspot() {
 		{WebURL: "https://www.v2ex.com/?tab=hot", FileName: "vsite.json", selector: "span.item_title a",
 			SiteIsUTF8Encode: false, profixURL: "https://www.v2ex.com"},
 	}
+	return sites
+}
+
+func GetHotspot() {
+	sites := GetHotSiteModel()
 	for {
 		parse_zhihu_rb()
 		for _, model := range sites {
 			parse_website(model)
 		}
 		//rum every 10 Minute
-		time.Sleep(time.Duration(10) * time.Minute)
+		time.Sleep(time.Duration(1) * time.Minute)
 	}
 }
 
@@ -208,8 +224,39 @@ func handlerHome(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hi there, I love %s!", r.URL.Path[1:])
 }
 
+func readJsonFile(fileName string) ([]JsonModel, error) {
+	content, err := ioutil.ReadFile(path.Join(jsonPath, fileName))
+	if err != nil {
+		return nil, errors.New("read file failed" + err.Error())
+	}
+
+	result := make([]JsonModel, 0)
+	if err := json.Unmarshal(content, &result); err != nil {
+		return nil, errors.New("Unmarshal failed" + err.Error())
+	}
+	return result, nil
+}
+
 func handlerHotspot(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hi there, I love %s!", r.URL.Path[1:])
+	result := make([]HotspotModel, 0)
+	//zhihu
+	jsonContent, _ := readJsonFile("zhihu.json")
+	tmp := HotspotModel{FileName: "zhihu.json", Content: jsonContent}
+	result = append(result, tmp)
+	//other
+	sites := GetHotSiteModel()
+	for _, model := range sites {
+		jsonContent, _ := readJsonFile(model.FileName)
+		tmp := HotspotModel{FileName: model.FileName, Content: jsonContent}
+		result = append(result, tmp)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	jsonEncoder := json.NewEncoder(w)
+	jsonEncoder.SetEscapeHTML(false)
+	err := jsonEncoder.Encode(result)
+	if err != nil {
+		log.Fatal("Encode result failed" + err.Error())
+	}
 }
 
 /************** main func **************/
@@ -220,9 +267,9 @@ func main() {
 		os.Mkdir(jsonPath, os.ModePerm)
 	}
 	//get data from website
-	GetHotspot()
+	go GetHotspot()
 	//start http server
-	// http.HandleFunc("/hotspot", handlerHotspot)
-	// http.HandleFunc("/", handlerHome)
-	//http.ListenAndServe(":83", nil)
+	http.HandleFunc("/hotspot", handlerHotspot)
+	http.HandleFunc("/", handlerHome)
+	http.ListenAndServe(":83", nil)
 }
