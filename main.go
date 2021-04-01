@@ -119,6 +119,19 @@ func WriteFile(model interface{}, fileName string) error {
 	return nil
 }
 
+func readJsonFile(fileName string) ([]JsonModel, error) {
+	content, err := ioutil.ReadFile(path.Join(jsonPath, fileName))
+	if err != nil {
+		return nil, errors.New("read file failed" + err.Error())
+	}
+
+	result := make([]JsonModel, 0)
+	if err := json.Unmarshal(content, &result); err != nil {
+		return nil, errors.New("Unmarshal failed" + err.Error())
+	}
+	return result, nil
+}
+
 /************** Get Data **************/
 //百度今日热点事件排行榜
 //百度实时热点排行榜
@@ -222,19 +235,6 @@ func GetHotspot() {
 /************** Http **************/
 func handlerHome(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hi there, I love %s!", r.URL.Path[1:])
-}
-
-func readJsonFile(fileName string) ([]JsonModel, error) {
-	content, err := ioutil.ReadFile(path.Join(jsonPath, fileName))
-	if err != nil {
-		return nil, errors.New("read file failed" + err.Error())
-	}
-
-	result := make([]JsonModel, 0)
-	if err := json.Unmarshal(content, &result); err != nil {
-		return nil, errors.New("Unmarshal failed" + err.Error())
-	}
-	return result, nil
 }
 
 func handlerHotspot(w http.ResponseWriter, r *http.Request) {
