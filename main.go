@@ -264,7 +264,6 @@ func main() {
 	//get data from website
 	go GetHotspot()
 	//start http server
-	// Serve static files
 	http.HandleFunc("/img/logo.png", handlerLogo)
 	http.HandleFunc("/hotspot", handlerHotspot)
 	http.HandleFunc("/", handlerHome)
