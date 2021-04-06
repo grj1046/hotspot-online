@@ -19,8 +19,11 @@ import (
 	"golang.org/x/text/encoding/simplifiedchinese"
 )
 
-//go:embed index.html
+//go:embed html/index.html
 var embedFile embed.FS
+
+//go:embed html/img/logo.png
+var logoFile []byte
 
 type JsonModel struct {
 	Name string
@@ -223,13 +226,17 @@ func GetHotspot() {
 }
 
 /************** Http **************/
+
 func handlerHome(w http.ResponseWriter, r *http.Request) {
-	byteHtml, err := embedFile.ReadFile("index.html")
+	byteHtml, err := embedFile.ReadFile("html/index.html")
 	if err != nil {
 		fmt.Fprintf(w, "get index.html failed. "+err.Error())
 		return
 	}
 	w.Write(byteHtml)
+}
+func handlerLogo(w http.ResponseWriter, r *http.Request) {
+	w.Write(logoFile)
 }
 
 func handlerHotspot(w http.ResponseWriter, r *http.Request) {
@@ -257,6 +264,8 @@ func main() {
 	//get data from website
 	go GetHotspot()
 	//start http server
+	// Serve static files
+	http.HandleFunc("/img/logo.png", handlerLogo)
 	http.HandleFunc("/hotspot", handlerHotspot)
 	http.HandleFunc("/", handlerHome)
 	err = http.ListenAndServe(httpPort, nil)
@@ -264,5 +273,5 @@ func main() {
 		log.Fatal("ListenAndServe failed: ", err)
 		return
 	}
-	fmt.Println("ListenAndServe: ", httpPort)
+	log.Println("ListenAndServe: ", httpPort)
 }
