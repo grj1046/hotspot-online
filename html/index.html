@@ -65,16 +65,17 @@
             <div class="col-sm-3">
                 <h6>百度热点事件</h6>
                 <div class="row-col">
-                    <a target="_blank" href="#" id="baidusj0" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="baidusj1" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="baidusj2" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="baidusj3" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="baidusj4" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="baidusj5" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="baidusj6" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="baidusj7" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="baidusj8" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="baidusj9" class="list-group-item list-group-item-action">热榜数据</a>
+                    {{ range $key, $val := . }}
+                        {{ if eq $val.FileName "baidusj.json" }}
+                            {{ range $index, $model := $val.Content }}
+                                {{ if lt $index 10 }}
+                                <a target="_blank" href="{{$model.Url}}" id="baidusj{{$index}}" class="list-group-item list-group-item-action">
+                                    <small class="font-weight-normal">{{inc $index}}. {{$model.Name}}</small>
+                                </a>
+                                {{ end }}
+                            {{ end }}
+                        {{ end }}
+                    {{ end }}
                     <div class="more">
                         <a target="_blank" href="http://top.baidu.com/buzz?b=341" id="baidusj" class="list-group-item list-group-item-action">more &gt;&gt;</a>
                     </div>
@@ -83,16 +84,17 @@
             <div class="col-sm-3">
                 <h6>百度实时热点</h6>
                 <div class="row-col">
-                    <a target="_blank" href="#" id="baidurd0" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="baidurd1" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="baidurd2" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="baidurd3" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="baidurd4" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="baidurd5" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="baidurd6" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="baidurd7" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="baidurd8" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="baidurd9" class="list-group-item list-group-item-action">热榜数据</a>
+                    {{ range $key, $val := . }}
+                        {{ if eq $val.FileName "baidurd.json" }}
+                            {{ range $index, $model := $val.Content }}
+                                {{ if lt $index 10 }}
+                                <a target="_blank" href="{{$model.Url}}" id="baidusj{{$index}}" class="list-group-item list-group-item-action">
+                                    <small class="font-weight-normal">{{inc $index}}. {{$model.Name}}</small>
+                                </a>
+                                {{ end }}
+                            {{ end }}
+                        {{ end }}
+                    {{ end }}
                     <div class="more">
                         <a target="_blank" href="http://top.baidu.com/buzz?b=1" id="baidurd" class="list-group-item list-group-item-action">more &gt;&gt;</a>
                     </div>
@@ -101,16 +103,17 @@
             <div class="col-sm-3">
                 <h6>微博热搜榜</h6>
                 <div class="row-col">
-                    <a target="_blank" href="#" id="weibo0" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="weibo1" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="weibo2" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="weibo3" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="weibo4" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="weibo5" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="weibo6" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="weibo7" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="weibo8" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="weibo9" class="list-group-item list-group-item-action">热榜数据</a>
+                    {{ range $key, $val := . }}
+                        {{ if eq $val.FileName "weibo.json" }}
+                            {{ range $index, $model := $val.Content }}
+                                {{ if lt $index 10 }}
+                                <a target="_blank" href="{{$model.Url}}" id="baidusj{{$index}}" class="list-group-item list-group-item-action">
+                                    <small class="font-weight-normal">{{inc $index}}. {{$model.Name}}</small>
+                                </a>
+                                {{ end }}
+                            {{ end }}
+                        {{ end }}
+                    {{ end }}
                     <div class="more">
                         <a target="_blank" href="https://s.weibo.com/top/summary?cate=realtimehot" id="weibo" class="list-group-item list-group-item-action">more &gt;&gt;</a>
                     </div>
@@ -119,16 +122,17 @@
             <div class="col-sm-3">
                 <h6>贴吧热门讨论</h6>
                 <div class="row-col">
-                    <a target="_blank" href="#" id="tieba0" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="tieba1" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="tieba2" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="tieba3" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="tieba4" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="tieba5" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="tieba6" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="tieba7" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="tieba8" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="tieba9" class="list-group-item list-group-item-action">热榜数据</a>
+                    {{ range $key, $val := . }}
+                        {{ if eq $val.FileName "tieba.json" }}
+                            {{ range $index, $model := $val.Content }}
+                                {{ if lt $index 10 }}
+                                <a target="_blank" href="{{$model.Url}}" id="baidusj{{$index}}" class="list-group-item list-group-item-action">
+                                    <small class="font-weight-normal">{{inc $index}}. {{$model.Name}}</small>
+                                </a>
+                                {{ end }}
+                            {{ end }}
+                        {{ end }}
+                    {{ end }}
                     <div class="more">
                         <a target="_blank" href="http://tieba.baidu.com/hottopic/browse/topicList?res_type=1" id="tieba" class="list-group-item list-group-item-action">more &gt;&gt;</a>
                     </div>
@@ -140,16 +144,17 @@
             <div class="col-sm-6">
                 <h6>V2EX热帖</h6>
                 <div class="row-col">
-                    <a target="_blank" href="#" id="vsite0" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="vsite1" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="vsite2" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="vsite3" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="vsite4" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="vsite5" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="vsite6" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="vsite7" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="vsite8" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="vsite9" class="list-group-item list-group-item-action">热榜数据</a>
+                    {{ range $key, $val := . }}
+                        {{ if eq $val.FileName "vsite.json" }}
+                            {{ range $index, $model := $val.Content }}
+                                {{ if lt $index 10 }}
+                                <a target="_blank" href="{{$model.Url}}" id="baidusj{{$index}}" class="list-group-item list-group-item-action">
+                                    <small class="font-weight-normal">{{inc $index}}. {{$model.Name}}</small>
+                                </a>
+                                {{ end }}
+                            {{ end }}
+                        {{ end }}
+                    {{ end }}
                     <div class="more">
                         <a target="_blank" href="https://www.v2ex.com/?tab=hot" id="vsite" class="list-group-item list-group-item-action">more &gt;&gt;</a>
                     </div>
@@ -158,16 +163,17 @@
             <div class="col-sm-6">
                 <h6>知乎热榜</h6>
                 <div class="row-col">
-                    <a target="_blank" href="#" id="zhihu0" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="zhihu1" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="zhihu2" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="zhihu3" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="zhihu4" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="zhihu5" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="zhihu6" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="zhihu7" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="zhihu8" class="list-group-item list-group-item-action">热榜数据</a>
-                    <a target="_blank" href="#" id="zhihu9" class="list-group-item list-group-item-action">热榜数据</a>
+                    {{ range $key, $val := . }}
+                        {{ if eq $val.FileName "zhihu.json" }}
+                            {{ range $index, $model := $val.Content }}
+                                {{ if lt $index 10 }}
+                                <a target="_blank" href="{{$model.Url}}" id="baidusj{{$index}}" class="list-group-item list-group-item-action">
+                                    <small class="font-weight-normal">{{inc $index}}. {{$model.Name}}</small>
+                                </a>
+                                {{ end }}
+                            {{ end }}
+                        {{ end }}
+                    {{ end }}
                     <div class="more">
                         <a target="_blank" href="https://www.zhihu.com/hot" id="zhihu" class="list-group-item list-group-item-action">more &gt;&gt;</a>
                     </div>
@@ -176,7 +182,7 @@
         </div>
     </div>
 
-    <script src="https://cdn.staticfile.org/jquery/3.2.1/jquery.min.js"></script>
+    <!-- <script src="https://cdn.staticfile.org/jquery/3.2.1/jquery.min.js"></script>
     <script src="https://cdn.staticfile.org/popper.js/1.12.5/umd/popper.min.js"></script>
     <script src="https://cdn.staticfile.org/twitter-bootstrap/4.1.0/js/bootstrap.min.js"></script>
     <script type="text/javascript">
@@ -200,6 +206,6 @@
                 }
             });
         })
-    </script>>
+    </script>> -->
 </body>
 </html>

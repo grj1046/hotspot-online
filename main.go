@@ -13,17 +13,12 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/text/encoding/simplifiedchinese"
 )
-
-//go:embed html/index.html
-var embedFile embed.FS
-
-//go:embed html/img/logo.png
-var logoFile []byte
 
 type JsonModel struct {
 	Name string
@@ -54,7 +49,13 @@ type HotSiteModel struct {
 	profixURL        string
 }
 
+//go:embed html/index.html
+var embedFile embed.FS
+
+//go:embed html/img/logo.png
+var logoFile []byte
 var globalData = make([]HotspotModel, 0)
+var indextmpl = &template.Template{}
 
 func decodeToGBK(text string) (string, error) {
 	dst := make([]byte, len(text)*2)
@@ -132,6 +133,27 @@ func writeData(fileName string, content []JsonModel) {
 		var curr = HotspotModel{FileName: fileName, Content: content}
 		globalData = append(globalData, curr)
 	}
+}
+func getIndexTemplate() (*template.Template, error) {
+	funcMap := template.FuncMap{
+		// The name "inc" is what the function will be called in the template text.
+		"inc": func(i int) int {
+			return i + 1
+		},
+	}
+	byteHtml, err := embedFile.ReadFile("html/index.html")
+	if err != nil {
+		return nil, err
+	}
+	tmpl := template.New("index").Funcs(funcMap)
+	if err != nil {
+		return nil, err
+	}
+	tmpl, err = tmpl.Parse(string(byteHtml))
+	if err != nil {
+		return nil, err
+	}
+	return tmpl, nil
 }
 
 /************** Get Data **************/
@@ -228,12 +250,12 @@ func GetHotspot() {
 /************** Http **************/
 
 func handlerHome(w http.ResponseWriter, r *http.Request) {
-	byteHtml, err := embedFile.ReadFile("html/index.html")
+	err := indextmpl.Execute(w, globalData)
 	if err != nil {
-		fmt.Fprintf(w, "get index.html failed. "+err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Write(byteHtml)
+	// w.Write(byteHtml)
 }
 func handlerLogo(w http.ResponseWriter, r *http.Request) {
 	w.Write(logoFile)
@@ -264,6 +286,11 @@ func main() {
 	//get data from website
 	go GetHotspot()
 	//start http server
+	indextmpl, err = getIndexTemplate()
+	if err != nil {
+		log.Fatal("ListenAndServe failed: ", err)
+		return
+	}
 	http.HandleFunc("/img/logo.png", handlerLogo)
 	http.HandleFunc("/hotspot", handlerHotspot)
 	http.HandleFunc("/", handlerHome)
