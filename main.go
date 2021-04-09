@@ -292,6 +292,7 @@ func main() {
 		return
 	}
 	http.HandleFunc("/img/logo.png", handlerLogo)
+	http.HandleFunc("/favicon.ico", handlerLogo)
 	http.HandleFunc("/hotspot", handlerHotspot)
 	http.HandleFunc("/", handlerHome)
 	err = http.ListenAndServe(httpPort, nil)
