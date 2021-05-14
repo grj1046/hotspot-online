@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -94,6 +95,10 @@ func getGoquryDocument(weburl string) (*goquery.Document, error) {
 	}
 	client := &http.Client{Transport: tr}
 	request, _ := http.NewRequest(http.MethodGet, weburl, nil)
+	request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9")
+	u, _ := url.Parse(weburl)
+	request.Header.Add("Host", u.Host)
+	request.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36")
 	response, err := client.Do(request)
 	if err != nil {
 		return nil, errors.New("NewRequest: " + err.Error())
@@ -224,8 +229,8 @@ func GetHotSiteModel() []HotSiteModel {
 			SiteIsUTF8Encode: false, profixURL: "https://s.weibo.com"},
 		{WebURL: "http://tieba.baidu.com/hottopic/browse/topicList?res_type=1", FileName: "tieba.json", selector: "a.topic-text",
 			SiteIsUTF8Encode: false, profixURL: ""},
-		{WebURL: "https://www.v2ex.com/?tab=hot", FileName: "vsite.json", selector: "span.item_title a",
-			SiteIsUTF8Encode: false, profixURL: "https://www.v2ex.com"},
+		{WebURL: "https://www.douban.com/group/explore", FileName: "douban.json", selector: "div.channel-item h3 a",
+			SiteIsUTF8Encode: false, profixURL: ""},
 	}
 	return sites
 }

@@ -142,10 +142,10 @@
 
         <div class="row">
             <div class="col-sm-6">
-                <h6>V2EX热帖</h6>
+                <h6>豆瓣热帖</h6>
                 <div class="row-col">
                     {{ range $key, $val := . }}
-                        {{ if eq $val.FileName "vsite.json" }}
+                        {{ if eq $val.FileName "douban.json" }}
                             {{ range $index, $model := $val.Content }}
                                 {{ if lt $index 10 }}
                                 <a target="_blank" href="{{$model.Url}}" id="baidusj{{$index}}" class="list-group-item list-group-item-action">
@@ -156,7 +156,7 @@
                         {{ end }}
                     {{ end }}
                     <div class="more">
-                        <a target="_blank" href="https://www.v2ex.com/?tab=hot" id="vsite" class="list-group-item list-group-item-action">more &gt;&gt;</a>
+                        <a target="_blank" href="https://www.douban.com/group/explore" id="douban" class="list-group-item list-group-item-action">more &gt;&gt;</a>
                     </div>
                 </div>
             </div>
@@ -186,7 +186,7 @@
     <script src="https://cdn.staticfile.org/popper.js/1.12.5/umd/popper.min.js"></script>
     <script src="https://cdn.staticfile.org/twitter-bootstrap/4.1.0/js/bootstrap.min.js"></script>
     <script type="text/javascript">
-        //var siteArray = ["baidusj", "baidurd", "weibo", "tieba", "vsite", "zhihu"];
+        //var siteArray = ["baidusj", "baidurd", "weibo", "tieba", "douban", "zhihu"];
         $(function () {
             var page = "hotspot";
             $.getJSON(page, function (data_all) {
